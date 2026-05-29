@@ -29,7 +29,7 @@
         .nitro-container { width: 120px; height: 8px; background: #111; border-radius: 4px; margin-top: 4px; overflow: hidden; border: 1px solid rgba(255,0,255,0.3); }
         .nitro-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff00ff, #00ffff); box-shadow: 0 0 8px #ff00ff; }
 
-        /* Touch Interfaces Optimized structurally for both Portrait 9:16 and Landscape 16:9 */
+        /* Touch Interfaces */
         .mobile-controls { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; padding: 20px; pointer-events: auto; }
         .control-block { display: flex; gap: 12px; }
         .touch-btn { width: 75px; height: 75px; background: rgba(255, 255, 255, 0.07); border: 2px solid rgba(0, 255, 255, 0.3); border-radius: 50%; color: rgba(255, 255, 255, 0.7); font-size: 26px; display: flex; justify-content: center; align-items: center; font-weight: bold; -webkit-tap-highlight-color: transparent; }
@@ -39,7 +39,6 @@
         .btn-brake { background: rgba(255, 0, 80, 0.07); border-color: rgba(255, 0, 80, 0.4); }
         .btn-brake:active { background: rgba(255, 0, 80, 0.35); border-color: #ff0050; box-shadow: 0 0 15px rgba(255, 0, 80, 0.6); }
         
-        /* Adjust control layout gracefully if viewport scale falls into native portrait dimensions */
         @media(orientation: portrait) {
             h1 { font-size: 1.9rem; }
             .touch-btn { width: 65px; height: 65px; font-size: 22px; }
@@ -52,7 +51,7 @@
 <div id="game-container">
     <canvas id="gameCanvas"></canvas>
     
-    <div class="ui-layer id="hud">
+    <div class="ui-layer" id="hud">
         <div class="hud-top">
             <div class="hud-card">
                 SCORE <div id="ui-score" style="color: #ff00ff; font-size: 1.3rem;">0</div>
@@ -96,8 +95,7 @@
 
 <script>
 /**
- * AUDIO SYNTHESIS SUBSYSTEM (Web Audio API Architecture)
- * Generates music tracks and dynamic motor runtime effects via native code processing.
+ * AUDIO SYNTHESIS SUBSYSTEM
  */
 class SoundEngine {
     constructor() {
@@ -122,7 +120,6 @@ class SoundEngine {
         this.osc.frequency.setValueAtTime(40, this.ctx.currentTime);
         this.gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
         
-        // Lowpass filter for engine realism
         let filter = this.ctx.createBiquadFilter();
         filter.type = 'lowpass';
         filter.frequency.setValueAtTime(300, this.ctx.currentTime);
@@ -134,8 +131,7 @@ class SoundEngine {
     }
 
     updateEngine(speedRatio, isNitro) {
-        if (!this.osc) return;
-        // Pitch shifting based on simulated throttle speed percentage
+        if (!this.osc || !this.ctx) return;
         let pitch = 40 + (speedRatio * 160) + (isNitro ? 40 : 0);
         this.osc.frequency.setTargetAtTime(pitch, this.ctx.currentTime, 0.1);
         this.gain.gain.setTargetAtTime(0.04 + (speedRatio * 0.06), this.ctx.currentTime, 0.1);
@@ -166,7 +162,6 @@ class SoundEngine {
     }
 
     startSynthMusic() {
-        // Procedural loop mimicking cyberpunk basslines
         let notes = [55, 55, 65.41, 55, 73.42, 55, 48.99, 65.41]; 
         let index = 0;
         
@@ -194,7 +189,7 @@ class SoundEngine {
 const audio = new SoundEngine();
 
 /**
- * GRAPHICS CORE & PERSPECTIVE SIMULATOR
+ * GRAPHICS CORE & PHYSICS
  */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d', { alpha: false });
@@ -205,18 +200,14 @@ let gameState = 'menu';
 let lastTime = 0;
 let animationFrameId;
 
-// Environment Constants
 const roadWidth = 2200;
 const segmentLength = 200;
 const rumbleLength = 3;
 const drawDistance = 240; 
 let fov = 100;
 const cameraHeight = 1100;
-
-// Dynamic FOV calculations relative to landscape/portrait changes
 let cameraDepth = 1 / Math.tan((fov / 2) * Math.PI / 180);
 
-// Player Physics Configurations
 let playerX = 0;
 let playerZ = 0;
 let speed = 0;
@@ -227,15 +218,12 @@ const decel = -maxSpeed / 5;
 let nitro = 100;
 let isNitro = false;
 
-// Arrays
 let track = [];
 let trackLength = 0;
 let traffic = [];
-let particles = [];
 let score = 0;
 let highScore = localStorage.getItem('velocityApexHigh') || 0;
 
-// Core Input Array
 const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, w: false, a: false, s: false, d: false, Shift: false };
 
 window.addEventListener('keydown', (e) => { 
@@ -254,7 +242,6 @@ window.addEventListener('keyup', (e) => {
     if (e.key === 'Shift') keys.Shift = false;
 });
 
-// Structural UI Bindings mapped to cross-platform gesture inputs
 function mapTouch(id, targetKey) {
     const target = document.getElementById(id);
     target.addEventListener('touchstart', (e) => { e.preventDefault(); keys[targetKey] = true; if(navigator.vibrate) navigator.vibrate(10); }, {passive: false});
@@ -266,17 +253,14 @@ mapTouch('btn-gas', 'ArrowUp');
 mapTouch('btn-brake', 'ArrowDown');
 mapTouch('btn-nitro', 'Shift');
 
-// Auto Adjust Layout Constraints upon Dynamic Window Mutation
 window.addEventListener('resize', () => {
     width = canvas.width = window.innerWidth;
     height = canvas.height = window.innerHeight;
-    // Adapt standard FOV matrix depending on the active Aspect Ratio (9:16 vs 16:9)
     fov = (width < height) ? 120 : 95; 
     cameraDepth = 1 / Math.tan((fov / 2) * Math.PI / 180);
 });
 window.dispatchEvent(new Event('resize'));
 
-// UI Interfacings
 const uiScore = document.getElementById('ui-score');
 const uiHighScore = document.getElementById('ui-highscore');
 const uiSpeed = document.getElementById('ui-speed');
@@ -288,9 +272,6 @@ document.getElementById('menu-highscore').innerText = `BEST ATTAINED: ${Math.flo
 document.getElementById('start-btn').addEventListener('click', startGame);
 document.getElementById('restart-btn').addEventListener('click', startGame);
 
-/**
- * RASTER PROJECTION MATHEMATICAL TRANSLATION
- */
 function project(point, cameraX, cameraY, cameraZ, cameraDepth, width, height, roadWidth) {
     point.camera.x = (point.world.x || 0) - cameraX;
     point.camera.y = (point.world.y || 0) - cameraY;
@@ -306,7 +287,6 @@ function resetTrack() {
     traffic = [];
     const totalSegments = 2500;
     
-    // Procedural track architecture
     for (let i = 0; i < totalSegments; i++) {
         let curve = 0;
         let y = 0;
@@ -327,18 +307,16 @@ function resetTrack() {
         });
     }
 
-    // Connect vertical elevation points smoothly
     for (let i = 1; i < totalSegments; i++) {
         track[i].p1.world.y = track[i - 1].p2.world.y;
     }
     trackLength = track.length * segmentLength;
 
-    // Populate Traffic with different cars across varied paths
     let colors = ['#ff2233', '#ff9900', '#ffff00', '#00ff55', '#0088ff', '#bb00ff'];
     for (let j = 100; j < totalSegments - 100; j += 32) {
         if (Math.random() > 0.45) {
             traffic.push({
-                offset: (Math.random() * 1.6) - 0.8, // Positioned on track lane matrix
+                offset: (Math.random() * 1.6) - 0.8,
                 z: j * segmentLength,
                 speed: maxSpeed * (0.22 + Math.random() * 0.25),
                 color: colors[Math.floor(Math.random() * colors.length)],
@@ -349,13 +327,13 @@ function resetTrack() {
     }
 }
 
+// Fixed array bounds handler
 function findSegment(z) {
-    return track[Math.floor(z / segmentLength) % track.length];
+    let index = Math.floor(z / segmentLength) % track.length;
+    if (index < 0) index += track.length; 
+    return track[index];
 }
 
-/**
- * RENDERING ENGINES
- */
 function drawPolygon(ctx, x1, y1, x2, y2, x3, y3, x4, y4, color) {
     ctx.fillStyle = color;
     ctx.beginPath();
@@ -368,7 +346,6 @@ function drawPolygon(ctx, x1, y1, x2, y2, x3, y3, x4, y4, color) {
 }
 
 function renderBackground(ctx) {
-    // Dynamic Horizon Space Rendering
     let gradient = ctx.createLinearGradient(0, 0, 0, height * 0.6);
     gradient.addColorStop(0, '#020208');
     gradient.addColorStop(0.4, '#0f051d');
@@ -376,7 +353,6 @@ function renderBackground(ctx) {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 
-    // Cyberpunk Neon Grid Elements
     ctx.strokeStyle = 'rgba(255, 0, 255, 0.08)';
     ctx.lineWidth = 1.5;
     let horizonY = height / 2;
@@ -395,15 +371,12 @@ function drawCarSprite(ctx, x, y, scale, color, widthFactor, typeShift, turnValu
     x = x - w / 2;
     y = y - h;
 
-    // Contact Ambient Occlusion Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(x - w*0.05, y + h - 4, w * 1.1, 12);
 
-    // Chassis base
     ctx.fillStyle = color;
     ctx.fillRect(x, y + h * 0.35, w, h * 0.65);
     
-    // Cabin Pillar Structure
     ctx.fillStyle = '#06060c';
     ctx.beginPath();
     ctx.moveTo(x + w * 0.18, y + h * 0.35);
@@ -413,24 +386,20 @@ function drawCarSprite(ctx, x, y, scale, color, widthFactor, typeShift, turnValu
     ctx.closePath();
     ctx.fill();
 
-    // Windshield accents
     ctx.fillStyle = '#00ffff';
     ctx.globalAlpha = 0.3;
     ctx.fillRect(x + w * 0.3, y + h * 0.08, w * 0.4, h * 0.22);
     ctx.globalAlpha = 1.0;
     
-    // Tail Warning Lighting Modules
     ctx.fillStyle = (keys.ArrowDown && isPlayer) ? '#ff0033' : '#660011';
     ctx.fillRect(x + w * 0.06, y + h * 0.45, w * 0.16, h * 0.15);
     ctx.fillRect(x + w * 0.78, y + h * 0.45, w * 0.16, h * 0.15);
 
-    // Dynamic Tire Track Alignments
     ctx.fillStyle = '#010103';
     let steerOffset = turnValue * w * 0.08;
     ctx.fillRect(x + steerOffset, y + h * 0.75, w * 0.18, h * 0.3);
     ctx.fillRect(x + w * 0.82 + steerOffset, y + h * 0.75, w * 0.18, h * 0.3);
 
-    // High Velocity Particle Discharge (Nitro Mode)
     if (isPlayer && isNitro) {
         let flr = Math.random() * 22 * scale;
         ctx.fillStyle = '#00ffff';
@@ -446,14 +415,10 @@ function updateEngineState(dt) {
     const speedRatio = speed / maxSpeed;
     let turnFactor = dt * 2.2 * Math.max(0.3, speedRatio);
 
-    // Steer Input Vectoring
     if (keys.ArrowLeft) playerX -= turnFactor;
     if (keys.ArrowRight) playerX += turnFactor;
-
-    // Centrifugal curve drift offset calculation
     playerX -= (turnFactor * speedRatio * currentSegment.curve * 2.5);
 
-    // Dynamic Engine Accelerations & Boost Matrices
     isNitro = keys.Shift && nitro > 0;
     let activeAcceleration = accel;
     let activeTopSpeed = maxSpeed;
@@ -466,17 +431,12 @@ function updateEngineState(dt) {
         if (nitro < 100) nitro += dt * 8;
     }
 
-    if (keys.ArrowUp) {
-        speed += activeAcceleration * dt;
-    } else if (keys.ArrowDown) {
-        speed += braking * dt;
-    } else {
-        speed += decel * dt;
-    }
+    if (keys.ArrowUp) speed += activeAcceleration * dt;
+    else if (keys.ArrowDown) speed += braking * dt;
+    else speed += decel * dt;
 
-    // Boundary Track Clamp Constraints
     if ((playerX < -1 || playerX > 1) && speed > (maxSpeed * 0.25)) {
-        speed += (decel * 2.5) * dt; // Slow down on grass/sand edge matrix
+        speed += (decel * 2.5) * dt; 
     }
 
     speed = Math.max(0, Math.min(speed, activeTopSpeed));
@@ -484,21 +444,17 @@ function updateEngineState(dt) {
 
     if (playerZ >= trackLength) playerZ -= trackLength;
 
-    // Realtime Audio updates
     audio.updateEngine(speed / maxSpeed, isNitro);
 
-    // Traffic Sim Mapping & Bound Computations
     for (let i = 0; i < traffic.length; i++) {
         let car = traffic[i];
         car.z += car.speed * dt;
         if (car.z >= trackLength) car.z -= trackLength;
 
-        // Bounding Volume Collision Detection Check
         if (car.z > playerZ && car.z < playerZ + 260) {
             let spaceX = Math.abs(playerX - car.offset);
             let spaceZ = car.z - playerZ;
             if (spaceX < 0.58 && spaceZ < segmentLength * 1.1) {
-                // Terminate Session due to crash impact
                 speed = 0;
                 audio.triggerCrashSound();
                 if (navigator.vibrate) navigator.vibrate([150, 50, 150]);
@@ -515,8 +471,6 @@ function updateEngineState(dt) {
     }
 
     score += (speed / maxSpeed) * dt * 140;
-
-    // Fast HTML Component Interfacing
     uiScore.innerText = Math.floor(score);
     uiSpeed.innerText = Math.floor((speed / maxSpeed) * 320);
     uiNitro.style.width = `${nitro}%`;
@@ -528,7 +482,6 @@ function drawSceneGraph() {
     const baseSegment = findSegment(playerZ);
     const startPercent = (playerZ % segmentLength) / segmentLength;
 
-    // Variable field of view zoom scaling depending on your velocity path
     let velocityFOVModifier = 1 + ((speed / maxSpeed) * 0.12);
     let activeCameraDepth = cameraDepth * velocityFOVModifier;
 
@@ -542,7 +495,6 @@ function drawSceneGraph() {
     let xMultiplier = 0;
     let deltaX = 0;
 
-    // Projection Loop for Core Pseudo-3D Ground Tracks
     for (let n = 0; n < drawDistance; n++) {
         const segment = track[(baseSegment.index + n) % track.length];
         segment.looped = segment.index < baseSegment.index;
@@ -555,7 +507,6 @@ function drawSceneGraph() {
 
         if (segment.p1.camera.z <= activeCameraDepth || segment.p2.screen.y >= maxClipY) continue;
 
-        // Render polygons
         drawPolygon(ctx, 0, segment.p1.screen.y, width, segment.p1.screen.y, width, segment.p2.screen.y, 0, segment.p2.screen.y, segment.color.grass);
         drawPolygon(ctx, segment.p1.screen.x - segment.p1.screen.w * 1.15, segment.p1.screen.y, segment.p1.screen.x + segment.p1.screen.w * 1.15, segment.p1.screen.y, segment.p2.screen.x + segment.p2.screen.w * 1.15, segment.p2.screen.y, segment.p2.screen.x - segment.p2.screen.w * 1.15, segment.p2.screen.y, segment.color.rumble);
         drawPolygon(ctx, segment.p1.screen.x - segment.p1.screen.w, segment.p1.screen.y, segment.p1.screen.x + segment.p1.screen.w, segment.p1.screen.y, segment.p2.screen.x + segment.p2.screen.w, segment.p2.screen.y, segment.p2.screen.x - segment.p2.screen.w, segment.color.road);
@@ -563,7 +514,6 @@ function drawSceneGraph() {
         maxClipY = segment.p1.screen.y;
     }
 
-    // Secondary Depth Loop to draw Traffic Cars and Player Object from Back to Front
     for (let n = drawDistance - 1; n > 0; n--) {
         const segment = track[(baseSegment.index + n) % track.length];
 
@@ -578,12 +528,9 @@ function drawSceneGraph() {
             }
         }
 
-        // Draw Player Car layer plane when index meets the chase distance point
         if (n === 12) {
             let playerScale = activeCameraDepth / (segmentLength * 12);
             let pX = width / 2;
-            
-            // Adjust baseline rendering target layout automatically based on screen proportions
             let pY = (width < height) ? (height * 0.82) : (height - 40);
             let steerDirection = (keys.ArrowLeft ? -1 : keys.ArrowRight ? 1 : 0);
             
@@ -592,13 +539,14 @@ function drawSceneGraph() {
     }
 }
 
-/**
- * LIFECYCLE EVENT CONTROLLERS
- */
+// Safely clamped runHeartbeat
 function runHeartbeat(time) {
     if (gameState === 'playing') {
         let dt = (time - lastTime) / 1000;
-        if (dt > 0.1) dt = 0.1; // Cap time variations during system stutters
+        
+        if (dt < 0) dt = 0; // Fixes the crash issue entirely
+        if (dt > 0.1) dt = 0.1;
+        
         updateEngineState(dt);
         drawSceneGraph();
     }
@@ -607,7 +555,7 @@ function runHeartbeat(time) {
 }
 
 function startGame() {
-    audio.init(); // Mount dynamic audio engine seamlessly upon interaction
+    audio.init(); 
     
     mainMenu.classList.add('hidden');
     gameOverMenu.classList.add('hidden');
@@ -620,12 +568,16 @@ function startGame() {
     
     resetTrack();
     gameState = 'playing';
-    lastTime = performance.now();
+    
     cancelAnimationFrame(animationFrameId);
-    runHeartbeat(lastTime);
+    
+    // Safely sync rendering clock directly via requestAnimationFrame on load
+    animationFrameId = requestAnimationFrame((time) => {
+        lastTime = time;
+        runHeartbeat(time);
+    });
 }
 
-// Initial Canvas State Render
 resetTrack();
 drawSceneGraph();
 </script>
