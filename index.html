@@ -11,7 +11,6 @@
         #game-container { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
         canvas { display: block; width: 100%; height: 100%; }
 
-        /* UI Overlays */
         .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; z-index: 10; padding-top: max(10px, env(safe-area-inset-top)); }
         
         .menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(10,15,25,0.95), rgba(0,0,5,0.95)); display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: auto; z-index: 20; backdrop-filter: blur(10px); text-align: center; padding: 20px; }
@@ -20,7 +19,6 @@
         h1 { color: #fff; font-size: 3rem; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 5px; text-shadow: 0 5px 15px rgba(0,0,0,0.8); }
         h2 { color: #4CAF50; font-size: 1.2rem; margin-bottom: 30px; font-weight: bold; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
         
-        /* Difficulty Selector */
         .diff-container { display: flex; gap: 10px; margin-bottom: 30px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
         .diff-btn { background: transparent; border: 2px solid transparent; padding: 10px 20px; color: #888; font-size: 1rem; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
         .diff-btn.active { color: #fff; border-color: #2196F3; background: rgba(33, 150, 243, 0.2); box-shadow: 0 0 15px rgba(33, 150, 243, 0.3); }
@@ -28,13 +26,11 @@
         .start-btn { background: #2196F3; border: none; padding: 18px 50px; color: #fff; font-size: 1.4rem; font-weight: bold; border-radius: 30px; cursor: pointer; box-shadow: 0 6px 20px rgba(33, 150, 243, 0.5); transition: transform 0.1s; text-transform: uppercase; letter-spacing: 1px; }
         .start-btn:active { transform: scale(0.95); }
 
-        /* HUD Styling */
         .hud-top { display: flex; justify-content: space-between; width: 100%; padding: 15px; pointer-events: none; }
         .hud-card { background: rgba(20, 25, 30, 0.85); border: 1px solid rgba(255, 255, 255, 0.15); padding: 10px 20px; border-radius: 15px; color: #fff; font-weight: bold; font-size: 1rem; box-shadow: 0 5px 15px rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
         .speedometer { font-size: 2.2rem; color: #fff; font-style: italic; text-shadow: 0 2px 8px rgba(0,0,0,0.6); }
         .stats-row { display: flex; gap: 20px; margin-bottom: 5px; font-size: 1.2rem; }
 
-        /* Mobile Controls */
         .mobile-controls { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; padding: 20px; padding-bottom: max(30px, env(safe-area-inset-bottom)); pointer-events: auto; }
         .control-block { display: flex; gap: 15px; }
         
@@ -46,7 +42,6 @@
         .btn-brake { background: rgba(198, 40, 40, 0.9); border-color: rgba(244, 67, 54, 0.5); }
         .btn-brake:active { background: #F44336; color: #fff; border-color: #E57373; }
 
-        /* Responsive scaling */
         @media(orientation: portrait) {
             h1 { font-size: 2.2rem; }
             .touch-btn { width: 65px; height: 65px; font-size: 24px; }
@@ -126,7 +121,7 @@ let currentDifficulty = 'medium';
 const diffSettings = {
     easy: { maxSpeedMult: 0.85, trafficDensity: 60, trafficSpeedMult: 0.2 },
     medium: { maxSpeedMult: 1.0, trafficDensity: 35, trafficSpeedMult: 0.35 },
-    hard: { maxSpeedMult: 1.2, trafficDensity: 20, trafficSpeedMult: 0.5 }
+    hard: { maxSpeedMult: 1.25, trafficDensity: 20, trafficSpeedMult: 0.5 }
 };
 
 // Environment Constants
@@ -137,6 +132,7 @@ const drawDistance = 250;
 let fov = 100;
 const cameraHeight = 1100;
 let cameraDepth = 1 / Math.tan((fov / 2) * Math.PI / 180);
+let bgOffset = 0; // For parallax background
 
 // Player Setup
 let playerX = 0;
@@ -154,6 +150,7 @@ let coinsCollected = 0;
 let score = 0;
 let highScore = localStorage.getItem('proRacingHighScore') || 0;
 let invulnTimer = 0;
+let cameraShake = 0;
 let floatingTexts = [];
 
 let track = [];
@@ -165,20 +162,17 @@ const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: f
 window.addEventListener('keydown', (e) => { if(keys.hasOwnProperty(e.key)) keys[e.key] = true; });
 window.addEventListener('keyup', (e) => { if(keys.hasOwnProperty(e.key)) keys[e.key] = false; });
 
-// Fullscreen API Helper
 function requestFullScreen() {
     let elem = document.documentElement;
     try {
         if (elem.requestFullscreen) elem.requestFullscreen();
         else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-        else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
-    } catch (e) { console.log("Fullscreen blocked by browser"); }
+    } catch (e) {}
 }
 
-// Touch Controls
 function mapTouch(id, targetKey) {
     const target = document.getElementById(id);
-    target.addEventListener('touchstart', (e) => { e.preventDefault(); keys[targetKey] = true; if(navigator.vibrate) navigator.vibrate(15); }, {passive: false});
+    target.addEventListener('touchstart', (e) => { e.preventDefault(); keys[targetKey] = true; if(navigator.vibrate) navigator.vibrate(10); }, {passive: false});
     target.addEventListener('touchend', (e) => { e.preventDefault(); keys[targetKey] = false; }, {passive: false});
 }
 mapTouch('btn-left', 'ArrowLeft');
@@ -186,7 +180,6 @@ mapTouch('btn-right', 'ArrowRight');
 mapTouch('btn-gas', 'ArrowUp');
 mapTouch('btn-brake', 'ArrowDown');
 
-// Responsive Scaling
 window.addEventListener('resize', () => {
     width = canvas.width = window.innerWidth;
     height = canvas.height = window.innerHeight;
@@ -195,7 +188,6 @@ window.addEventListener('resize', () => {
 });
 window.dispatchEvent(new Event('resize'));
 
-// UI Elements
 const uiScore = document.getElementById('ui-score');
 const uiSpeed = document.getElementById('ui-speed');
 const uiLives = document.getElementById('ui-lives');
@@ -206,7 +198,6 @@ const hud = document.getElementById('hud');
 
 document.getElementById('menu-highscore').innerText = `HIGH SCORE: ${Math.floor(highScore)}`;
 
-// Difficulty Selector Logic
 document.querySelectorAll('.diff-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
         document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
@@ -233,16 +224,15 @@ function resetTrack() {
     track = [];
     traffic = [];
     floatingTexts = [];
+    bgOffset = 0;
     const totalSegments = 3000;
     
-    // Apply Difficulty Settings
     let settings = diffSettings[currentDifficulty];
     activeMaxSpeed = baseMaxSpeed * settings.maxSpeedMult;
     accel = activeMaxSpeed / 5;
     braking = -activeMaxSpeed * 0.9;
     decel = -activeMaxSpeed / 8;
     
-    // Track Generation
     for (let i = 0; i < totalSegments; i++) {
         let curve = 0, y = 0;
         
@@ -257,15 +247,14 @@ function resetTrack() {
             p2: { world: { x: 0, y: 0, z: (i + 1) * segmentLength }, camera: {}, screen: {} },
             curve: curve,
             color: Math.floor(i / rumbleLength) % 2 ? 
-                { road: '#4f5052', grass: '#2e7d32', rumble: '#ffffff', lane: '#ffffff' } : 
-                { road: '#3e3f41', grass: '#1b5e20', rumble: '#d32f2f', lane: '#3e3f41' },
+                { road: '#383a3c', grass: '#2e7d32', rumble: '#ffffff', lane: '#ffffff' } : 
+                { road: '#414447', grass: '#1b5e20', rumble: '#d32f2f', lane: '#414447' },
             coin: (Math.random() > 0.94) ? { x: (Math.random() * 1.6) - 0.8, active: true } : null
         });
     }
     for (let i = 1; i < totalSegments; i++) track[i].p1.world.y = track[i - 1].p2.world.y;
     trackLength = track.length * segmentLength;
 
-    // Traffic Generation
     let carColors = ['#F44336', '#2196F3', '#FF9800', '#9C27B0', '#FFFFFF', '#00BCD4', '#111111'];
     for (let j = 100; j < totalSegments - 100; j += settings.trafficDensity) {
         if (Math.random() > 0.3) {
@@ -296,43 +285,77 @@ function drawPolygon(ctx, x1, y1, x2, y2, x3, y3, x4, y4, color) {
     ctx.fill();
 }
 
-function renderBackground(ctx) {
+// Draw realistic parallax sky and mountains
+function renderBackground(ctx, pitchY) {
     let gradient = ctx.createLinearGradient(0, 0, 0, height * 0.6);
-    gradient.addColorStop(0, '#2b5876'); // Deep sky blue
-    gradient.addColorStop(1, '#4e4376'); // Sunrise horizon
+    gradient.addColorStop(0, '#ff7e5f'); // Sunset Top
+    gradient.addColorStop(1, '#feb47b'); // Sunset Horizon
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
+
+    // Fake Sun
+    ctx.fillStyle = '#FFEB3B';
+    ctx.beginPath();
+    ctx.arc(width/2 + (bgOffset * width * 0.5), height*0.4 - pitchY, 80, 0, Math.PI*2);
+    ctx.fill();
+
+    // Procedural Mountains
+    ctx.fillStyle = '#2c3e50';
+    ctx.beginPath();
+    ctx.moveTo(0, height);
+    for(let i = 0; i <= width; i += 20) {
+        let mountainY = height*0.55 - pitchY + Math.sin((i + bgOffset * width * 2) * 0.005) * 80 + Math.cos((i + bgOffset * width * 2) * 0.02) * 30;
+        ctx.lineTo(i, mountainY);
+    }
+    ctx.lineTo(width, height);
+    ctx.closePath();
+    ctx.fill();
 }
 
-// Highly Realistic Car Rendering function
+// Refined Car Drawing with 3D Wheels
 function drawRealisticCar(ctx, x, y, w, h, baseColor, turnValue, isPlayer) {
     x = x - w / 2;
     y = y - h;
 
-    // Soft drop shadow
+    // Smooth soft shadow underneath
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.beginPath();
-    ctx.ellipse(x + w/2, y + h, w*0.6, h*0.2, 0, 0, Math.PI*2);
+    ctx.ellipse(x + w/2, y + h*0.9, w*0.55, h*0.2, 0, 0, Math.PI*2);
     ctx.fill();
 
-    let steerOffset = turnValue * w * 0.15;
-    
-    // Tires (Wide racing tires)
-    ctx.fillStyle = '#0a0a0a';
-    ctx.fillRect(x + steerOffset, y + h * 0.6, w * 0.22, h * 0.4);
-    ctx.fillRect(x + w * 0.78 + steerOffset, y + h * 0.6, w * 0.22, h * 0.4);
+    // Tire visual math (adds slight 3D perspective to wheels)
+    let steerOffset = turnValue * w * 0.18;
+    let tireW = w * 0.18;
+    let tireH = h * 0.35;
+    let tireY = y + h * 0.65;
 
-    // Rim Details
-    ctx.fillStyle = '#666';
-    ctx.fillRect(x + steerOffset + w*0.05, y + h*0.7, w*0.12, h*0.2);
-    ctx.fillRect(x + w*0.78 + steerOffset + w*0.05, y + h*0.7, w*0.12, h*0.2);
+    // Draw 3D Wheels (Left and Right)
+    const drawWheel = (wx, wy, offset) => {
+        // Tire Body (Black)
+        ctx.fillStyle = '#0a0a0a';
+        ctx.beginPath();
+        ctx.roundRect(wx + offset, wy, tireW, tireH, 5);
+        ctx.fill();
+        // Inner Silver Rim
+        ctx.fillStyle = '#b0b0b0';
+        ctx.beginPath();
+        ctx.roundRect(wx + offset + tireW*0.2, wy + tireH*0.1, tireW*0.6, tireH*0.8, 3);
+        ctx.fill();
+    };
 
-    // Main Body Gradient (Metallic look)
+    drawWheel(x - tireW*0.1, tireY, steerOffset); // Left Wheel
+    drawWheel(x + w - tireW*0.9, tireY, steerOffset); // Right Wheel
+
+    // Undercarriage base
+    ctx.fillStyle = '#151515';
+    ctx.fillRect(x + w*0.05, y + h*0.75, w*0.9, h*0.2);
+
+    // Main Body 
     let bodyGrad = ctx.createLinearGradient(x, y, x + w, y);
-    bodyGrad.addColorStop(0, '#111'); // dark edge
-    bodyGrad.addColorStop(0.2, baseColor); // main color
+    bodyGrad.addColorStop(0, '#111');
+    bodyGrad.addColorStop(0.2, baseColor);
     bodyGrad.addColorStop(0.8, baseColor);
-    bodyGrad.addColorStop(1, '#111'); // dark edge
+    bodyGrad.addColorStop(1, '#111');
     
     ctx.fillStyle = bodyGrad;
     ctx.beginPath();
@@ -342,21 +365,35 @@ function drawRealisticCar(ctx, x, y, w, h, baseColor, turnValue, isPlayer) {
     ctx.lineTo(x + w, y + h*0.75); // Bottom right
     ctx.closePath();
     ctx.fill();
+
+    // Gloss Reflection Stripe on body
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.beginPath();
+    ctx.moveTo(x + w*0.1, y + h*0.35);
+    ctx.lineTo(x + w*0.4, y + h*0.35);
+    ctx.lineTo(x + w*0.2, y + h*0.75);
+    ctx.lineTo(x, y + h*0.75);
+    ctx.closePath();
+    ctx.fill();
     
-    // Rear Bumper Grille / Diffuser
-    ctx.fillStyle = '#151515';
-    ctx.fillRect(x + w*0.15, y + h*0.75, w*0.7, h*0.15);
-    
+    // Side Mirrors
+    ctx.fillStyle = baseColor;
+    ctx.beginPath(); ctx.roundRect(x - w*0.05, y + h*0.4, w*0.15, h*0.1, 4); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x + w*0.9, y + h*0.4, w*0.15, h*0.1, 4); ctx.fill();
+
     // Exhaust Pipes
     ctx.fillStyle = '#aaa';
-    ctx.beginPath(); ctx.arc(x + w*0.25, y + h*0.82, w*0.04, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(x + w*0.75, y + h*0.82, w*0.04, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + w*0.25, y + h*0.85, w*0.04, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + w*0.75, y + h*0.85, w*0.04, 0, Math.PI*2); ctx.fill();
+    // Fire exhaust if speeding up
+    if (isPlayer && keys.ArrowUp && speed > activeMaxSpeed * 0.5) {
+        ctx.fillStyle = '#00ffff';
+        ctx.beginPath(); ctx.arc(x + w*0.25, y + h*0.85, w*0.06 * Math.random(), 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + w*0.75, y + h*0.85, w*0.06 * Math.random(), 0, Math.PI*2); ctx.fill();
+    }
 
     // Roof & Cabin
-    let roofGrad = ctx.createLinearGradient(x, y, x, y + h);
-    roofGrad.addColorStop(0, '#222');
-    roofGrad.addColorStop(1, '#000');
-    ctx.fillStyle = roofGrad;
+    ctx.fillStyle = '#111';
     ctx.beginPath();
     ctx.moveTo(x + w * 0.2, y + h * 0.35);
     ctx.lineTo(x + w * 0.3, y);
@@ -365,10 +402,10 @@ function drawRealisticCar(ctx, x, y, w, h, baseColor, turnValue, isPlayer) {
     ctx.closePath();
     ctx.fill();
 
-    // Rear Windshield (with fake environment reflection)
+    // Rear Windshield (with Sky reflection gradient)
     let glassGrad = ctx.createLinearGradient(x, y, x, y + h*0.35);
-    glassGrad.addColorStop(0, '#4e4376'); // reflects horizon
-    glassGrad.addColorStop(1, '#111');
+    glassGrad.addColorStop(0, '#ff7e5f'); // Sunset color
+    glassGrad.addColorStop(1, '#222');
     ctx.fillStyle = glassGrad;
     ctx.beginPath();
     ctx.moveTo(x + w * 0.25, y + h * 0.3);
@@ -378,24 +415,27 @@ function drawRealisticCar(ctx, x, y, w, h, baseColor, turnValue, isPlayer) {
     ctx.closePath();
     ctx.fill();
     
-    // Taillights (Glowing)
+    // Taillights
     let isBraking = keys.ArrowDown && isPlayer;
-    ctx.fillStyle = isBraking ? '#ff3333' : '#8b0000';
+    ctx.fillStyle = isBraking ? '#ff3333' : '#aa0000';
     ctx.shadowColor = '#ff0000';
-    ctx.shadowBlur = isBraking ? 15 : 0;
-    ctx.fillRect(x + w * 0.05, y + h * 0.45, w * 0.25, h * 0.15);
-    ctx.fillRect(x + w * 0.7, y + h * 0.45, w * 0.25, h * 0.15);
-    ctx.shadowBlur = 0; // reset shadow
-    
-    // Spoiler
-    ctx.fillStyle = '#111';
-    ctx.fillRect(x + w*0.05, y + h*0.25, w*0.9, h*0.08); // Wing
-    ctx.fillRect(x + w*0.2, y + h*0.33, w*0.05, h*0.1); // Strut Left
-    ctx.fillRect(x + w*0.75, y + h*0.33, w*0.05, h*0.1); // Strut Right
+    ctx.shadowBlur = isBraking ? 20 : 5;
+    ctx.fillRect(x + w * 0.05, y + h * 0.45, w * 0.25, h * 0.12);
+    ctx.fillRect(x + w * 0.7, y + h * 0.45, w * 0.25, h * 0.12);
+    ctx.shadowBlur = 0; 
+
+    // Rear Wing / Spoiler
+    ctx.fillStyle = '#151515';
+    ctx.fillRect(x + w*0.02, y + h*0.25, w*0.96, h*0.06); 
+    ctx.fillRect(x + w*0.2, y + h*0.31, w*0.05, h*0.08); 
+    ctx.fillRect(x + w*0.75, y + h*0.31, w*0.05, h*0.08); 
 
     // License Plate
     ctx.fillStyle = '#fff';
     ctx.fillRect(x + w * 0.4, y + h * 0.55, w * 0.2, h * 0.12);
+    ctx.fillStyle = '#000';
+    ctx.font = `bold ${h*0.08}px Arial`;
+    ctx.fillText("RACER", x + w*0.5, y + h*0.64);
 }
 
 function drawCoin(ctx, x, y, r) {
@@ -414,38 +454,49 @@ function updateEngineState(dt) {
     const currentSegment = findSegment(playerZ);
     const speedRatio = speed / activeMaxSpeed;
     
-    let turnFactor = dt * 3.5 * Math.max(0.3, speedRatio);
+    // Smooth responsive steering
+    let turnFactor = dt * 3.8 * Math.max(0.3, speedRatio);
 
     if (keys.ArrowLeft) playerX -= turnFactor;
     if (keys.ArrowRight) playerX += turnFactor;
     
-    // Centrifugal curve drift
-    playerX -= (turnFactor * speedRatio * currentSegment.curve * 1.5);
+    // Centrifugal curve drift (Reduced slightly to keep better control)
+    playerX -= (turnFactor * speedRatio * currentSegment.curve * 1.2);
+    bgOffset -= currentSegment.curve * dt * speedRatio * 0.5; // Scroll background
 
-    // Hard Boundaries
-    playerX = Math.max(-1.0, Math.min(1.0, playerX));
+    // Real Physics: Off-Road Resistance & Limiters
+    let isOffRoad = Math.abs(playerX) > 0.9;
+    
+    if (isOffRoad) {
+        // Massive drag if off the asphalt
+        speed -= activeMaxSpeed * 0.6 * dt;
+        speed = Math.max(speed, activeMaxSpeed * 0.25); // Don't stop entirely, let them crawl back
+        cameraShake = 8; // Rumbly dirt effect
+        if(navigator.vibrate) navigator.vibrate(5); 
+    } else {
+        cameraShake = 0;
+        // Normal Acceleration
+        if (keys.ArrowUp) speed += accel * dt;
+        else if (keys.ArrowDown) speed += braking * dt;
+        else speed += decel * dt;
+    }
 
-    // Acceleration Logic
-    if (keys.ArrowUp) speed += accel * dt;
-    else if (keys.ArrowDown) speed += braking * dt;
-    else speed += decel * dt;
-
+    // Soft clamp instead of invisible wall, allowing car to dip into grass
+    playerX = Math.max(-1.3, Math.min(1.3, playerX));
     speed = Math.max(0, Math.min(speed, activeMaxSpeed));
+    
     playerZ += speed * dt;
     if (playerZ >= trackLength) playerZ -= trackLength;
 
     // Detect Coin Pickup
     if (currentSegment.coin && currentSegment.coin.active) {
-        if (Math.abs(playerX - currentSegment.coin.x) < 0.35) { // Accurate hitbox
+        if (Math.abs(playerX - currentSegment.coin.x) < 0.4) { 
             currentSegment.coin.active = false;
             coinsCollected++;
             score += 500;
             if (navigator.vibrate) navigator.vibrate(20);
             
-            // Spawn Floating Text Animation
-            floatingTexts.push({
-                x: width/2, y: height/2 + 50, alpha: 1.0, text: '+500'
-            });
+            floatingTexts.push({ x: width/2, y: height/2 + 50, alpha: 1.0, text: '+500' });
         }
     }
 
@@ -459,7 +510,6 @@ function updateEngineState(dt) {
             if (car.z >= trackLength) car.z -= trackLength;
 
             if (car.z > playerZ && car.z < playerZ + 180) {
-                // TIGHTENED ACCURATE HITBOX (matches visual width perfectly)
                 let spaceX = Math.abs(playerX - car.offset);
                 let spaceZ = car.z - playerZ;
                 
@@ -477,13 +527,11 @@ function updateEngineState(dt) {
                         }
                         hud.classList.add('hidden');
                         gameOverMenu.classList.remove('hidden');
-                        
-                        // Exit fullscreen safely on game over if supported
-                        if(document.exitFullscreen) document.exitFullscreen().catch(()=>{});
                         return;
                     } else {
-                        speed = activeMaxSpeed * 0.3; 
+                        speed = activeMaxSpeed * 0.2; 
                         invulnTimer = 2.0; 
+                        cameraShake = 20;
                     }
                 }
             }
@@ -493,35 +541,34 @@ function updateEngineState(dt) {
     // Update Floating Texts
     for(let i = floatingTexts.length - 1; i >= 0; i--) {
         let ft = floatingTexts[i];
-        ft.y -= 200 * dt; // Float up
-        ft.alpha -= 1.0 * dt; // Fade out over 1 sec
+        ft.y -= 150 * dt; 
+        ft.alpha -= 1.2 * dt; 
         if(ft.alpha <= 0) floatingTexts.splice(i, 1);
     }
 
     score += (speed / activeMaxSpeed) * dt * 100;
-    
     uiScore.innerText = Math.floor(score);
-    // Dynamic KM/H relative to difficulty multiplier
-    uiSpeed.innerText = Math.floor((speed / activeMaxSpeed) * 250); 
+    uiSpeed.innerText = Math.floor((speed / activeMaxSpeed) * 280); // Speed illusion
     uiLives.innerText = lives;
     uiCoins.innerText = coinsCollected;
 }
 
 function drawSceneGraph() {
-    ctx.fillStyle = '#2b5876'; 
-    ctx.fillRect(0, 0, width, height);
+    ctx.clearRect(0, 0, width, height);
 
     const baseSegment = findSegment(playerZ);
     const startPercent = (playerZ % segmentLength) / segmentLength;
     const camZ = playerZ;
     let baseCamY = baseSegment.p1.world.y + (baseSegment.p2.world.y - baseSegment.p1.world.y) * startPercent;
-    const camY = baseCamY + cameraHeight;
+    
+    // Add camera shake effect to Y axis
+    let shakeFactor = (Math.random() - 0.5) * cameraShake;
+    const camY = baseCamY + cameraHeight + shakeFactor;
 
-    renderBackground(ctx);
+    renderBackground(ctx, baseCamY * 0.05);
 
     let maxClipY = height, xMultiplier = 0, deltaX = 0;
 
-    // Polygons (Front to Back)
     for (let n = 0; n < drawDistance; n++) {
         const segment = track[(baseSegment.index + n) % track.length];
         segment.looped = segment.index < baseSegment.index;
@@ -546,7 +593,6 @@ function drawSceneGraph() {
         maxClipY = segment.p1.screen.y;
     }
 
-    // Sprites (Back to Front)
     for (let n = drawDistance - 1; n > 0; n--) {
         const segment = track[(baseSegment.index + n) % track.length];
 
@@ -573,18 +619,22 @@ function drawSceneGraph() {
         let pW = width < height ? width * 0.45 : width * 0.22; 
         let pH = pW * 0.45;
         let pX = width / 2;
-        let pY = height - (width < height ? 180 : 80); 
+        // Bump Y up if vibrating from off-road
+        let pY = height - (width < height ? 180 : 80) + shakeFactor; 
         let steerDirection = (keys.ArrowLeft ? -1 : keys.ArrowRight ? 1 : 0);
         
-        drawRealisticCar(ctx, pX, pY, pW, pH, '#ff3300', steerDirection, true); // Player is red sports car
+        drawRealisticCar(ctx, pX, pY, pW, pH, '#ff3300', steerDirection, true); 
     }
 
-    // Render Floating Animations (Coins)
-    ctx.font = "bold 30px Arial";
+    // Render Floating Animations
+    ctx.font = "bold 40px 'Segoe UI'";
     ctx.textAlign = "center";
     for(let ft of floatingTexts) {
-        ctx.fillStyle = `rgba(255, 215, 0, ${ft.alpha})`; // Gold color
+        ctx.fillStyle = `rgba(255, 215, 0, ${ft.alpha})`; 
+        ctx.shadowColor = '#000';
+        ctx.shadowBlur = 10;
         ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.shadowBlur = 0;
     }
 }
 
@@ -614,6 +664,7 @@ function startGame() {
     coinsCollected = 0;
     invulnTimer = 0;
     floatingTexts = [];
+    cameraShake = 0;
     
     resetTrack();
     gameState = 'playing';
@@ -625,7 +676,6 @@ function startGame() {
     });
 }
 
-// Initial draw
 resetTrack();
 drawSceneGraph();
 </script>
