@@ -24,26 +24,25 @@
 
         /* HUD */
         .hud-top { display: flex; justify-content: space-between; width: 100%; padding: 15px; pointer-events: none; }
-        .hud-card { background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); padding: 10px 15px; border-radius: 8px; color: #fff; font-weight: bold; font-size: 1rem; backdrop-filter: blur(5px); }
-        .speedometer { font-size: 1.8rem; color: #fff; font-style: italic; }
-        .stats-row { display: flex; gap: 15px; margin-bottom: 5px; font-size: 1.1rem; }
-        .stat-icon { font-size: 1.2rem; }
+        .hud-card { background: rgba(30, 40, 50, 0.9); border: 2px solid rgba(255, 255, 255, 0.1); padding: 10px 15px; border-radius: 12px; color: #fff; font-weight: bold; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .speedometer { font-size: 2rem; color: #fff; font-style: italic; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .stats-row { display: flex; gap: 15px; margin-bottom: 5px; font-size: 1.2rem; }
 
         /* Refined Mobile Controls */
         .mobile-controls { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; padding: 20px; pointer-events: auto; padding-bottom: 30px; }
         .control-block { display: flex; gap: 15px; }
         
-        .touch-btn { width: 70px; height: 70px; background: rgba(30, 30, 30, 0.7); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%; color: #fff; font-size: 28px; display: flex; justify-content: center; align-items: center; font-weight: bold; -webkit-tap-highlight-color: transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .touch-btn { width: 70px; height: 70px; background: rgba(40, 40, 40, 0.85); border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; color: #fff; font-size: 26px; display: flex; justify-content: center; align-items: center; font-weight: bold; -webkit-tap-highlight-color: transparent; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
         .touch-btn:active { background: rgba(255, 255, 255, 0.9); color: #000; border-color: #fff; }
         
-        .btn-gas { background: rgba(76, 175, 80, 0.7); }
+        .btn-gas { background: rgba(76, 175, 80, 0.85); }
         .btn-gas:active { background: #4CAF50; color: #fff; }
-        .btn-brake { background: rgba(244, 67, 54, 0.7); }
+        .btn-brake { background: rgba(244, 67, 54, 0.85); }
         .btn-brake:active { background: #F44336; color: #fff; }
 
         @media(orientation: portrait) {
-            .touch-btn { width: 60px; height: 60px; font-size: 24px; }
-            .mobile-controls { padding: 15px; padding-bottom: 40px; }
+            .touch-btn { width: 65px; height: 65px; font-size: 24px; }
+            .mobile-controls { padding: 15px; padding-bottom: 35px; }
         }
     </style>
 </head>
@@ -56,20 +55,20 @@
         <div class="hud-top">
             <div class="hud-card">
                 <div class="stats-row">
-                    <span class="stat-icon">❤️</span> <span id="ui-lives">3</span>
-                    <span class="stat-icon" style="margin-left: 10px;">🪙</span> <span id="ui-coins">0</span>
+                    <span>❤️ <span id="ui-lives">3</span></span>
+                    <span style="margin-left: 10px;">🪙 <span id="ui-coins">0</span></span>
                 </div>
-                <div style="color: #4CAF50;">SCORE: <span id="ui-score">0</span></div>
+                <div style="color: #4CAF50; font-size: 14px; margin-top: 5px;">SCORE: <span id="ui-score">0</span></div>
             </div>
-            <div class="hud-card" style="text-align: right;">
+            <div class="hud-card" style="text-align: right; background: rgba(30, 40, 50, 0.9);">
                 <div class="speedometer"><span id="ui-speed">0</span> KM/H</div>
             </div>
         </div>
         
         <div class="mobile-controls">
             <div class="control-block">
-                <div class="touch-btn" id="btn-left">⮜</div>
-                <div class="touch-btn" id="btn-right">⮞</div>
+                <div class="touch-btn" id="btn-left">◀</div>
+                <div class="touch-btn" id="btn-right">▶</div>
             </div>
             <div class="control-block">
                 <div class="touch-btn btn-brake" id="btn-brake">B</div>
@@ -82,14 +81,14 @@
         <h1>PRO RACING</h1>
         <h2 id="menu-highscore">HIGH SCORE: 0</h2>
         <button id="start-btn">Start Race</button>
-        <p style="color: #888; margin-top: 20px; font-size: 0.9rem;">
+        <p style="color: #aaa; margin-top: 25px; font-size: 0.9rem;">
             Desktop: Arrows to Steer | Up/Down for Gas/Brake
         </p>
     </div>
 
     <div class="menu hidden" id="game-over-menu">
         <h1 style="color: #F44336;">GAME OVER</h1>
-        <div style="color: #fff; font-size: 1.4rem; margin: 20px 0;">Score: <span id="final-score" style="color: #4CAF50;">0</span></div>
+        <div style="color: #fff; font-size: 1.4rem; margin: 20px 0;">Final Score: <span id="final-score" style="color: #4CAF50;">0</span></div>
         <button id="restart-btn">Try Again</button>
     </div>
 </div>
@@ -111,9 +110,9 @@ let animationFrameId;
 const roadWidth = 2000;
 const segmentLength = 200;
 const rumbleLength = 3;
-const drawDistance = 300; 
+const drawDistance = 250; 
 let fov = 100;
-const cameraHeight = 1000;
+const cameraHeight = 1100;
 let cameraDepth = 1 / Math.tan((fov / 2) * Math.PI / 180);
 
 // Player Setup
@@ -121,15 +120,15 @@ let playerX = 0;
 let playerZ = 0;
 let speed = 0;
 const maxSpeed = segmentLength / (1/60); 
-// Slower, more realistic acceleration curve
-const accel = maxSpeed / 8;
-const braking = -maxSpeed * 0.8;
-const decel = -maxSpeed / 10;
+const accel = maxSpeed / 5;
+const braking = -maxSpeed * 0.9;
+const decel = -maxSpeed / 8;
+
 let lives = 3;
 let coinsCollected = 0;
 let score = 0;
 let highScore = localStorage.getItem('proRacingHighScore') || 0;
-let invulnTimer = 0; // Invulnerability frames after hitting a car
+let invulnTimer = 0;
 
 let track = [];
 let trackLength = 0;
@@ -154,7 +153,7 @@ mapTouch('btn-brake', 'ArrowDown');
 window.addEventListener('resize', () => {
     width = canvas.width = window.innerWidth;
     height = canvas.height = window.innerHeight;
-    fov = (width < height) ? 110 : 95; 
+    fov = (width < height) ? 120 : 95; 
     cameraDepth = 1 / Math.tan((fov / 2) * Math.PI / 180);
 });
 window.dispatchEvent(new Event('resize'));
@@ -187,14 +186,15 @@ function resetTrack() {
     traffic = [];
     const totalSegments = 3000;
     
+    // Generate Track and Coins
     for (let i = 0; i < totalSegments; i++) {
         let curve = 0;
         let y = 0;
         
-        if (i > 200 && i < 400) curve = 2;
-        if (i > 600 && i < 900) curve = -2;
-        if (i > 1100 && i < 1500) { curve = 1.5; y = Math.sin(i / 30) * 1200; }
-        if (i > 1800 && i < 2400) { curve = -2.5; y = Math.cos(i / 20) * 1500; }
+        if (i > 200 && i < 400) curve = 2.5;
+        if (i > 600 && i < 900) curve = -2.5;
+        if (i > 1100 && i < 1500) { curve = 1.8; y = Math.sin(i / 30) * 1200; }
+        if (i > 1800 && i < 2400) { curve = -2.8; y = Math.cos(i / 20) * 1500; }
 
         track.push({
             index: i,
@@ -202,9 +202,9 @@ function resetTrack() {
             p2: { world: { x: 0, y: 0, z: (i + 1) * segmentLength }, camera: {}, screen: {} },
             curve: curve,
             color: Math.floor(i / rumbleLength) % 2 ? 
-                { road: '#555', grass: '#2d6a2f', rumble: '#fff', lane: '#fff' } : 
-                { road: '#444', grass: '#265928', rumble: '#d32f2f', lane: '#444' },
-            coin: (Math.random() > 0.9) ? { x: (Math.random() * 2) - 1, active: true } : null
+                { road: '#555555', grass: '#2e7d32', rumble: '#ffffff', lane: '#ffffff' } : 
+                { road: '#424242', grass: '#1b5e20', rumble: '#d32f2f', lane: '#424242' },
+            coin: (Math.random() > 0.92) ? { x: (Math.random() * 1.6) - 0.8, active: true } : null
         });
     }
 
@@ -213,15 +213,15 @@ function resetTrack() {
     }
     trackLength = track.length * segmentLength;
 
-    let colors = ['#F44336', '#2196F3', '#FFC107', '#9C27B0', '#FFFFFF', '#607D8B'];
+    // Generate Traffic Cars
+    let colors = ['#F44336', '#2196F3', '#FF9800', '#9C27B0', '#FFFFFF', '#00BCD4'];
     for (let j = 100; j < totalSegments - 100; j += 40) {
-        if (Math.random() > 0.5) {
+        if (Math.random() > 0.4) {
             traffic.push({
-                offset: (Math.random() * 1.6) - 0.8,
+                offset: (Math.random() * 1.6) - 0.8, // Position across road width
                 z: j * segmentLength,
-                speed: maxSpeed * (0.2 + Math.random() * 0.3),
-                color: colors[Math.floor(Math.random() * colors.length)],
-                width: 160
+                speed: maxSpeed * (0.25 + Math.random() * 0.3),
+                color: colors[Math.floor(Math.random() * colors.length)]
             });
         }
     }
@@ -245,88 +245,82 @@ function drawPolygon(ctx, x1, y1, x2, y2, x3, y3, x4, y4, color) {
 }
 
 function renderBackground(ctx) {
-    // Realistic Sky
     let gradient = ctx.createLinearGradient(0, 0, 0, height * 0.6);
     gradient.addColorStop(0, '#4facfe'); // Light blue top
-    gradient.addColorStop(1, '#e0f7fa'); // Faded horizon
+    gradient.addColorStop(1, '#b3e5fc'); // Faded horizon
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 }
 
-// Draws a realistic vehicle
-function drawRealisticCar(ctx, x, y, scale, color, turnValue, isPlayer) {
-    let w = 180 * scale * (width / 1000);
-    let h = 80 * scale * (width / 1000);
+// Rewritten drawing function perfectly sized via pixel variables (w, h)
+function drawRealisticCar(ctx, x, y, w, h, color, turnValue, isPlayer) {
     x = x - w / 2;
     y = y - h;
 
-    // Shadow
+    // Shadow underneath car
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(x, y + h, w, h * 0.2);
+    ctx.fillRect(x, y + h*0.9, w, h * 0.2);
 
     // Tires
     ctx.fillStyle = '#111';
     let steerOffset = turnValue * w * 0.15;
-    ctx.fillRect(x + steerOffset, y + h * 0.7, w * 0.2, h * 0.4);
-    ctx.fillRect(x + w * 0.8 + steerOffset, y + h * 0.7, w * 0.2, h * 0.4);
+    ctx.fillRect(x + steerOffset, y + h * 0.65, w * 0.2, h * 0.35);
+    ctx.fillRect(x + w * 0.8 + steerOffset, y + h * 0.65, w * 0.2, h * 0.35);
 
     // Chassis base
-    ctx.fillStyle = '#222';
-    ctx.fillRect(x + w*0.05, y + h*0.8, w*0.9, h*0.2);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(x + w*0.05, y + h*0.75, w*0.9, h*0.25);
 
-    // Car Body
+    // Main Car Body
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.moveTo(x + w * 0.05, y + h);
-    ctx.lineTo(x + w * 0.1, y + h * 0.4);
-    ctx.lineTo(x + w * 0.9, y + h * 0.4);
-    ctx.lineTo(x + w * 0.95, y + h);
+    ctx.moveTo(x + w * 0.05, y + h*0.75);
+    ctx.lineTo(x + w * 0.15, y + h * 0.35);
+    ctx.lineTo(x + w * 0.85, y + h * 0.35);
+    ctx.lineTo(x + w * 0.95, y + h*0.75);
     ctx.closePath();
     ctx.fill();
     
-    // Roof/Cabin
+    // Roof & Cabin
     ctx.fillStyle = '#111';
     ctx.beginPath();
-    ctx.moveTo(x + w * 0.2, y + h * 0.4);
+    ctx.moveTo(x + w * 0.2, y + h * 0.35);
     ctx.lineTo(x + w * 0.3, y);
     ctx.lineTo(x + w * 0.7, y);
-    ctx.lineTo(x + w * 0.8, y + h * 0.4);
+    ctx.lineTo(x + w * 0.8, y + h * 0.35);
     ctx.closePath();
     ctx.fill();
 
     // Rear Window
     ctx.fillStyle = '#5dade2';
-    ctx.globalAlpha = 0.6;
     ctx.beginPath();
-    ctx.moveTo(x + w * 0.23, y + h * 0.35);
+    ctx.moveTo(x + w * 0.25, y + h * 0.3);
     ctx.lineTo(x + w * 0.32, y + h * 0.05);
     ctx.lineTo(x + w * 0.68, y + h * 0.05);
-    ctx.lineTo(x + w * 0.77, y + h * 0.35);
+    ctx.lineTo(x + w * 0.75, y + h * 0.3);
     ctx.closePath();
     ctx.fill();
-    ctx.globalAlpha = 1.0;
     
     // Taillights
     ctx.fillStyle = (keys.ArrowDown && isPlayer) ? '#ff0000' : '#8b0000';
-    ctx.fillRect(x + w * 0.1, y + h * 0.5, w * 0.15, h * 0.2);
-    ctx.fillRect(x + w * 0.75, y + h * 0.5, w * 0.15, h * 0.2);
+    ctx.fillRect(x + w * 0.1, y + h * 0.45, w * 0.15, h * 0.2);
+    ctx.fillRect(x + w * 0.75, y + h * 0.45, w * 0.15, h * 0.2);
     
     // License Plate
     ctx.fillStyle = '#fff';
-    ctx.fillRect(x + w * 0.4, y + h * 0.6, w * 0.2, h * 0.2);
+    ctx.fillRect(x + w * 0.4, y + h * 0.55, w * 0.2, h * 0.15);
 }
 
-function drawCoin(ctx, x, y, scale) {
-    let r = 30 * scale * (width / 1000);
+function drawCoin(ctx, x, y, r) {
     ctx.fillStyle = '#FFD700';
     ctx.beginPath();
     ctx.arc(x, y - r, r, 0, Math.PI * 2);
     ctx.fill();
+    
     ctx.strokeStyle = '#B8860B';
-    ctx.lineWidth = Math.max(1, 3 * scale);
+    ctx.lineWidth = Math.max(1, r * 0.1);
     ctx.stroke();
     
-    // Inner coin detail
     ctx.fillStyle = '#DAA520';
     ctx.beginPath();
     ctx.arc(x, y - r, r * 0.6, 0, Math.PI * 2);
@@ -339,42 +333,38 @@ function updateEngineState(dt) {
     const currentSegment = findSegment(playerZ);
     const speedRatio = speed / maxSpeed;
     
-    // Smooth Steering Physics
-    let turnFactor = dt * 1.8 * Math.max(0.4, speedRatio);
+    // Steering Physics (stronger turn factor to counteract drift)
+    let turnFactor = dt * 3.5 * Math.max(0.3, speedRatio);
 
     if (keys.ArrowLeft) playerX -= turnFactor;
     if (keys.ArrowRight) playerX += turnFactor;
     
-    // Centrifugal curve drift
-    playerX -= (turnFactor * speedRatio * currentSegment.curve * 2);
+    // Centrifugal curve drift (pushes car outward on corners)
+    playerX -= (turnFactor * speedRatio * currentSegment.curve * 1.2);
 
-    // Hard Boundaries (Keeps car strictly on the track)
-    playerX = Math.max(-1.1, Math.min(1.1, playerX));
+    // Hard Boundaries: Strictly clamp car between left (-1.0) and right (1.0) edges
+    playerX = Math.max(-1.0, Math.min(1.0, playerX));
 
     // Acceleration & Braking
-    if (keys.ArrowUp) {
-        speed += accel * dt;
-    } else if (keys.ArrowDown) {
-        speed += braking * dt;
-    } else {
-        speed += decel * dt;
-    }
+    if (keys.ArrowUp) speed += accel * dt;
+    else if (keys.ArrowDown) speed += braking * dt;
+    else speed += decel * dt;
 
     speed = Math.max(0, Math.min(speed, maxSpeed));
     playerZ += speed * dt;
     if (playerZ >= trackLength) playerZ -= trackLength;
 
-    // Coin Collection Logic
+    // Detect Coin Pickup
     if (currentSegment.coin && currentSegment.coin.active) {
-        if (Math.abs(playerX - currentSegment.coin.x) < 0.4) { // Hitbox distance
+        if (Math.abs(playerX - currentSegment.coin.x) < 0.4) {
             currentSegment.coin.active = false;
             coinsCollected++;
             score += 500;
-            if (navigator.vibrate) navigator.vibrate(20); // Small buzz for coin
+            if (navigator.vibrate) navigator.vibrate(20);
         }
     }
 
-    // Traffic Collision Logic
+    // Traffic Collision
     if (invulnTimer > 0) {
         invulnTimer -= dt;
     } else {
@@ -388,7 +378,6 @@ function updateEngineState(dt) {
                 let spaceZ = car.z - playerZ;
                 
                 if (spaceX < 0.6 && spaceZ < segmentLength * 1.2) {
-                    // Collision Detected
                     lives--;
                     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
                     
@@ -404,9 +393,8 @@ function updateEngineState(dt) {
                         gameOverMenu.classList.remove('hidden');
                         return;
                     } else {
-                        // Survive but lose speed and flash
-                        speed = maxSpeed * 0.2; // Drop speed to 20%
-                        invulnTimer = 2.0; // 2 seconds of invulnerability
+                        speed = maxSpeed * 0.3; // Slow down but survive
+                        invulnTimer = 2.0; // Invincible for 2s
                     }
                 }
             }
@@ -416,14 +404,13 @@ function updateEngineState(dt) {
     score += (speed / maxSpeed) * dt * 100;
     
     uiScore.innerText = Math.floor(score);
-    uiSpeed.innerText = Math.floor((speed / maxSpeed) * 220); // Realistic KM/H maxing around 220
+    uiSpeed.innerText = Math.floor((speed / maxSpeed) * 220); // Simulates 220 KM/H top speed
     uiLives.innerText = lives;
     uiCoins.innerText = coinsCollected;
 }
 
 function drawSceneGraph() {
-    // Clear screen
-    ctx.fillStyle = '#4facfe'; // Fallback sky color
+    ctx.fillStyle = '#4facfe'; // Background color clear
     ctx.fillRect(0, 0, width, height);
 
     const baseSegment = findSegment(playerZ);
@@ -439,6 +426,7 @@ function drawSceneGraph() {
     let xMultiplier = 0;
     let deltaX = 0;
 
+    // Draw Track Polygons (Front to Back)
     for (let n = 0; n < drawDistance; n++) {
         const segment = track[(baseSegment.index + n) % track.length];
         segment.looped = segment.index < baseSegment.index;
@@ -451,13 +439,11 @@ function drawSceneGraph() {
 
         if (segment.p1.camera.z <= cameraDepth || segment.p2.screen.y >= maxClipY) continue;
 
-        // Render polygons
         drawPolygon(ctx, 0, segment.p1.screen.y, width, segment.p1.screen.y, width, segment.p2.screen.y, 0, segment.p2.screen.y, segment.color.grass);
         drawPolygon(ctx, segment.p1.screen.x - segment.p1.screen.w * 1.1, segment.p1.screen.y, segment.p1.screen.x + segment.p1.screen.w * 1.1, segment.p1.screen.y, segment.p2.screen.x + segment.p2.screen.w * 1.1, segment.p2.screen.y, segment.p2.screen.x - segment.p2.screen.w * 1.1, segment.p2.screen.y, segment.color.rumble);
         drawPolygon(ctx, segment.p1.screen.x - segment.p1.screen.w, segment.p1.screen.y, segment.p1.screen.x + segment.p1.screen.w, segment.p1.screen.y, segment.p2.screen.x + segment.p2.screen.w, segment.p2.screen.y, segment.p2.screen.x - segment.p2.screen.w, segment.p2.screen.y, segment.color.road);
 
-        // Center line
-        if (segment.color.lane === '#fff') {
+        if (segment.color.lane === '#ffffff') {
             let laneW1 = segment.p1.screen.w * 0.02;
             let laneW2 = segment.p2.screen.w * 0.02;
             drawPolygon(ctx, segment.p1.screen.x - laneW1, segment.p1.screen.y, segment.p1.screen.x + laneW1, segment.p1.screen.y, segment.p2.screen.x + laneW2, segment.p2.screen.y, segment.p2.screen.x - laneW2, segment.p2.screen.y, segment.color.lane);
@@ -466,43 +452,40 @@ function drawSceneGraph() {
         maxClipY = segment.p1.screen.y;
     }
 
+    // Draw Sprites (Back to Front)
     for (let n = drawDistance - 1; n > 0; n--) {
         const segment = track[(baseSegment.index + n) % track.length];
 
         // Draw Coins
         if (segment.coin && segment.coin.active) {
-            let scale = segment.p1.screen.scale;
-            let coinX = segment.p1.screen.x + (scale * segment.coin.x * roadWidth * width / 2);
-            let coinY = segment.p1.screen.y;
-            drawCoin(ctx, coinX, coinY, scale);
+            let coinX = segment.p1.screen.x + (segment.coin.x * segment.p1.screen.w);
+            let coinR = 0.15 * segment.p1.screen.w; // Coin size relative to road width
+            drawCoin(ctx, coinX, segment.p1.screen.y, coinR);
         }
 
-        // Draw Traffic Cars
+        // Draw Traffic
         for (let i = 0; i < traffic.length; i++) {
             let car = traffic[i];
             let carSegment = findSegment(car.z);
             if (carSegment.index === segment.index) {
-                let scale = segment.p1.screen.scale;
-                let carX = segment.p1.screen.x + (scale * car.offset * roadWidth * width / 2);
-                let carY = segment.p1.screen.y;
-                drawRealisticCar(ctx, carX, carY, scale, car.color, 0, false);
+                let carX = segment.p1.screen.x + (car.offset * segment.p1.screen.w);
+                let carW = 0.8 * segment.p1.screen.w; // Car width is 80% of a lane width
+                let carH = carW * 0.5; // Aspect ratio
+                drawRealisticCar(ctx, carX, segment.p1.screen.y, carW, carH, car.color, 0, false);
             }
         }
+    }
 
-        // Draw Player Car
-        if (n === 10) {
-            // Blink if invulnerable
-            if (invulnTimer <= 0 || Math.floor(invulnTimer * 10) % 2 === 0) {
-                let playerScale = cameraDepth / (segmentLength * 10);
-                let pX = width / 2;
-                // Fixed solid anchor position for car on both mobile and desktop views
-                let pY = height - (height * 0.25); 
-                if (width > height) pY = height - (height * 0.15); // Adjust for landscape
-
-                let steerDirection = (keys.ArrowLeft ? -1 : keys.ArrowRight ? 1 : 0);
-                drawRealisticCar(ctx, pX, pY, playerScale * 0.8, '#ff3300', steerDirection, true);
-            }
-        }
+    // Draw Player Car LAST (Guarantees it is always perfectly visible)
+    if (invulnTimer <= 0 || Math.floor(invulnTimer * 10) % 2 === 0) {
+        // Player car dynamically scales based on device screen proportions
+        let pW = width < height ? width * 0.35 : width * 0.18; 
+        let pH = pW * 0.5;
+        let pX = width / 2;
+        let pY = height - (width < height ? 180 : 80); // Floating above the UI buttons
+        let steerDirection = (keys.ArrowLeft ? -1 : keys.ArrowRight ? 1 : 0);
+        
+        drawRealisticCar(ctx, pX, pY, pW, pH, '#ff3300', steerDirection, true);
     }
 }
 
@@ -510,7 +493,7 @@ function runHeartbeat(time) {
     if (gameState === 'playing') {
         let dt = (time - lastTime) / 1000;
         if (dt < 0) dt = 0; 
-        if (dt > 0.1) dt = 0.1;
+        if (dt > 0.1) dt = 0.1; // Fixes large jumps if tab is inactive
         
         updateEngineState(dt);
         drawSceneGraph();
@@ -536,14 +519,13 @@ function startGame() {
     gameState = 'playing';
     
     cancelAnimationFrame(animationFrameId);
-    
     animationFrameId = requestAnimationFrame((time) => {
         lastTime = time;
         runHeartbeat(time);
     });
 }
 
-// Initial draw behind menu
+// Initial backdrop draw before pressing play
 resetTrack();
 drawSceneGraph();
 </script>
