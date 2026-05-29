@@ -116,7 +116,6 @@ let gameState = 'menu';
 let lastTime = 0;
 let animationFrameId;
 
-// Game Settings
 let currentDifficulty = 'medium';
 const diffSettings = {
     easy: { maxSpeedMult: 0.85, trafficDensity: 60, trafficSpeedMult: 0.2 },
@@ -124,7 +123,6 @@ const diffSettings = {
     hard: { maxSpeedMult: 1.25, trafficDensity: 20, trafficSpeedMult: 0.5 }
 };
 
-// Environment Constants
 const roadWidth = 2000;
 const segmentLength = 200;
 const rumbleLength = 3;
@@ -132,12 +130,14 @@ const drawDistance = 250;
 let fov = 100;
 const cameraHeight = 1100;
 let cameraDepth = 1 / Math.tan((fov / 2) * Math.PI / 180);
-let bgOffset = 0; // For parallax background
+let bgOffset = 0; 
 
-// Player Setup
+// Physics State
 let playerX = 0;
 let playerZ = 0;
 let speed = 0;
+let currentSteer = 0; // Extremely important for smooth control
+
 const baseMaxSpeed = segmentLength / (1/60); 
 let activeMaxSpeed = baseMaxSpeed;
 
@@ -157,7 +157,6 @@ let track = [];
 let trackLength = 0;
 let traffic = [];
 
-// Input Management
 const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
 window.addEventListener('keydown', (e) => { if(keys.hasOwnProperty(e.key)) keys[e.key] = true; });
 window.addEventListener('keyup', (e) => { if(keys.hasOwnProperty(e.key)) keys[e.key] = false; });
@@ -235,7 +234,6 @@ function resetTrack() {
     
     for (let i = 0; i < totalSegments; i++) {
         let curve = 0, y = 0;
-        
         if (i > 100 && i < 300) curve = 2.5;
         if (i > 500 && i < 800) curve = -3.0;
         if (i > 1000 && i < 1400) { curve = 1.8; y = Math.sin(i / 25) * 1200; }
@@ -285,21 +283,18 @@ function drawPolygon(ctx, x1, y1, x2, y2, x3, y3, x4, y4, color) {
     ctx.fill();
 }
 
-// Draw realistic parallax sky and mountains
 function renderBackground(ctx, pitchY) {
     let gradient = ctx.createLinearGradient(0, 0, 0, height * 0.6);
-    gradient.addColorStop(0, '#ff7e5f'); // Sunset Top
-    gradient.addColorStop(1, '#feb47b'); // Sunset Horizon
+    gradient.addColorStop(0, '#ff7e5f'); 
+    gradient.addColorStop(1, '#feb47b'); 
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 
-    // Fake Sun
     ctx.fillStyle = '#FFEB3B';
     ctx.beginPath();
     ctx.arc(width/2 + (bgOffset * width * 0.5), height*0.4 - pitchY, 80, 0, Math.PI*2);
     ctx.fill();
 
-    // Procedural Mountains
     ctx.fillStyle = '#2c3e50';
     ctx.beginPath();
     ctx.moveTo(0, height);
@@ -312,45 +307,38 @@ function renderBackground(ctx, pitchY) {
     ctx.fill();
 }
 
-// Refined Car Drawing with 3D Wheels
 function drawRealisticCar(ctx, x, y, w, h, baseColor, turnValue, isPlayer) {
     x = x - w / 2;
     y = y - h;
 
-    // Smooth soft shadow underneath
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.beginPath();
     ctx.ellipse(x + w/2, y + h*0.9, w*0.55, h*0.2, 0, 0, Math.PI*2);
     ctx.fill();
 
-    // Tire visual math (adds slight 3D perspective to wheels)
-    let steerOffset = turnValue * w * 0.18;
+    // Wheel visual physics
+    let steerOffset = turnValue * w * 0.2; // Visual lean multiplier
     let tireW = w * 0.18;
     let tireH = h * 0.35;
     let tireY = y + h * 0.65;
 
-    // Draw 3D Wheels (Left and Right)
     const drawWheel = (wx, wy, offset) => {
-        // Tire Body (Black)
         ctx.fillStyle = '#0a0a0a';
         ctx.beginPath();
         ctx.roundRect(wx + offset, wy, tireW, tireH, 5);
         ctx.fill();
-        // Inner Silver Rim
         ctx.fillStyle = '#b0b0b0';
         ctx.beginPath();
         ctx.roundRect(wx + offset + tireW*0.2, wy + tireH*0.1, tireW*0.6, tireH*0.8, 3);
         ctx.fill();
     };
 
-    drawWheel(x - tireW*0.1, tireY, steerOffset); // Left Wheel
-    drawWheel(x + w - tireW*0.9, tireY, steerOffset); // Right Wheel
+    drawWheel(x - tireW*0.1, tireY, steerOffset); 
+    drawWheel(x + w - tireW*0.9, tireY, steerOffset);
 
-    // Undercarriage base
     ctx.fillStyle = '#151515';
     ctx.fillRect(x + w*0.05, y + h*0.75, w*0.9, h*0.2);
 
-    // Main Body 
     let bodyGrad = ctx.createLinearGradient(x, y, x + w, y);
     bodyGrad.addColorStop(0, '#111');
     bodyGrad.addColorStop(0.2, baseColor);
@@ -359,14 +347,13 @@ function drawRealisticCar(ctx, x, y, w, h, baseColor, turnValue, isPlayer) {
     
     ctx.fillStyle = bodyGrad;
     ctx.beginPath();
-    ctx.moveTo(x, y + h*0.75); // Bottom left
-    ctx.lineTo(x + w*0.1, y + h*0.35); // Mid left
-    ctx.lineTo(x + w*0.9, y + h*0.35); // Mid right
-    ctx.lineTo(x + w, y + h*0.75); // Bottom right
+    ctx.moveTo(x, y + h*0.75);
+    ctx.lineTo(x + w*0.1, y + h*0.35);
+    ctx.lineTo(x + w*0.9, y + h*0.35);
+    ctx.lineTo(x + w, y + h*0.75);
     ctx.closePath();
     ctx.fill();
 
-    // Gloss Reflection Stripe on body
     ctx.fillStyle = 'rgba(255,255,255,0.15)';
     ctx.beginPath();
     ctx.moveTo(x + w*0.1, y + h*0.35);
@@ -376,24 +363,23 @@ function drawRealisticCar(ctx, x, y, w, h, baseColor, turnValue, isPlayer) {
     ctx.closePath();
     ctx.fill();
     
-    // Side Mirrors
     ctx.fillStyle = baseColor;
     ctx.beginPath(); ctx.roundRect(x - w*0.05, y + h*0.4, w*0.15, h*0.1, 4); ctx.fill();
     ctx.beginPath(); ctx.roundRect(x + w*0.9, y + h*0.4, w*0.15, h*0.1, 4); ctx.fill();
 
-    // Exhaust Pipes
     ctx.fillStyle = '#aaa';
     ctx.beginPath(); ctx.arc(x + w*0.25, y + h*0.85, w*0.04, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.arc(x + w*0.75, y + h*0.85, w*0.04, 0, Math.PI*2); ctx.fill();
-    // Fire exhaust if speeding up
     if (isPlayer && keys.ArrowUp && speed > activeMaxSpeed * 0.5) {
         ctx.fillStyle = '#00ffff';
         ctx.beginPath(); ctx.arc(x + w*0.25, y + h*0.85, w*0.06 * Math.random(), 0, Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.arc(x + w*0.75, y + h*0.85, w*0.06 * Math.random(), 0, Math.PI*2); ctx.fill();
     }
 
-    // Roof & Cabin
-    ctx.fillStyle = '#111';
+    let roofGrad = ctx.createLinearGradient(x, y, x, y + h);
+    roofGrad.addColorStop(0, '#222');
+    roofGrad.addColorStop(1, '#000');
+    ctx.fillStyle = roofGrad;
     ctx.beginPath();
     ctx.moveTo(x + w * 0.2, y + h * 0.35);
     ctx.lineTo(x + w * 0.3, y);
@@ -402,9 +388,8 @@ function drawRealisticCar(ctx, x, y, w, h, baseColor, turnValue, isPlayer) {
     ctx.closePath();
     ctx.fill();
 
-    // Rear Windshield (with Sky reflection gradient)
     let glassGrad = ctx.createLinearGradient(x, y, x, y + h*0.35);
-    glassGrad.addColorStop(0, '#ff7e5f'); // Sunset color
+    glassGrad.addColorStop(0, '#ff7e5f');
     glassGrad.addColorStop(1, '#222');
     ctx.fillStyle = glassGrad;
     ctx.beginPath();
@@ -415,7 +400,6 @@ function drawRealisticCar(ctx, x, y, w, h, baseColor, turnValue, isPlayer) {
     ctx.closePath();
     ctx.fill();
     
-    // Taillights
     let isBraking = keys.ArrowDown && isPlayer;
     ctx.fillStyle = isBraking ? '#ff3333' : '#aa0000';
     ctx.shadowColor = '#ff0000';
@@ -424,13 +408,11 @@ function drawRealisticCar(ctx, x, y, w, h, baseColor, turnValue, isPlayer) {
     ctx.fillRect(x + w * 0.7, y + h * 0.45, w * 0.25, h * 0.12);
     ctx.shadowBlur = 0; 
 
-    // Rear Wing / Spoiler
     ctx.fillStyle = '#151515';
     ctx.fillRect(x + w*0.02, y + h*0.25, w*0.96, h*0.06); 
     ctx.fillRect(x + w*0.2, y + h*0.31, w*0.05, h*0.08); 
     ctx.fillRect(x + w*0.75, y + h*0.31, w*0.05, h*0.08); 
 
-    // License Plate
     ctx.fillStyle = '#fff';
     ctx.fillRect(x + w * 0.4, y + h * 0.55, w * 0.2, h * 0.12);
     ctx.fillStyle = '#000';
@@ -453,54 +435,60 @@ function updateEngineState(dt) {
 
     const currentSegment = findSegment(playerZ);
     const speedRatio = speed / activeMaxSpeed;
-    
-    // Smooth responsive steering
-    let turnFactor = dt * 3.8 * Math.max(0.3, speedRatio);
 
-    if (keys.ArrowLeft) playerX -= turnFactor;
-    if (keys.ArrowRight) playerX += turnFactor;
-    
-    // Centrifugal curve drift (Reduced slightly to keep better control)
-    playerX -= (turnFactor * speedRatio * currentSegment.curve * 1.2);
-    bgOffset -= currentSegment.curve * dt * speedRatio * 0.5; // Scroll background
+    // --- SUPER SMOOTH CONTROL PHYSICS ---
+    let targetSteer = 0;
+    if (keys.ArrowLeft) targetSteer = -1;
+    if (keys.ArrowRight) targetSteer = 1;
 
-    // Real Physics: Off-Road Resistance & Limiters
-    let isOffRoad = Math.abs(playerX) > 0.9;
+    // Steering Interpolation (Inertia & Auto-center)
+    if (targetSteer !== 0) {
+        // Turning into corners smoothly
+        currentSteer += (targetSteer - currentSteer) * dt * 8.0; 
+    } else {
+        // Releasing the wheel naturally snaps back to center
+        currentSteer += (0 - currentSteer) * dt * 10.0; 
+    }
+
+    // Apply the smoothed analog steering to the car's X position
+    let turnFactor = currentSteer * dt * 4.2 * Math.max(0.2, speedRatio);
+    playerX += turnFactor;
+    
+    // Centrifugal curve drift (slightly lowered so you fight the curve less)
+    let curveDrift = dt * 3.8 * Math.max(0.3, speedRatio) * speedRatio * currentSegment.curve * 1.1;
+    playerX -= curveDrift;
+    bgOffset -= currentSegment.curve * dt * speedRatio * 0.5;
+
+    let isOffRoad = Math.abs(playerX) > 0.95;
     
     if (isOffRoad) {
-        // Massive drag if off the asphalt
         speed -= activeMaxSpeed * 0.6 * dt;
-        speed = Math.max(speed, activeMaxSpeed * 0.25); // Don't stop entirely, let them crawl back
-        cameraShake = 8; // Rumbly dirt effect
-        if(navigator.vibrate) navigator.vibrate(5); 
+        speed = Math.max(speed, activeMaxSpeed * 0.25); 
+        cameraShake = 8; 
+        if(navigator.vibrate && Math.random() > 0.5) navigator.vibrate(5); 
     } else {
         cameraShake = 0;
-        // Normal Acceleration
         if (keys.ArrowUp) speed += accel * dt;
         else if (keys.ArrowDown) speed += braking * dt;
         else speed += decel * dt;
     }
 
-    // Soft clamp instead of invisible wall, allowing car to dip into grass
     playerX = Math.max(-1.3, Math.min(1.3, playerX));
     speed = Math.max(0, Math.min(speed, activeMaxSpeed));
     
     playerZ += speed * dt;
     if (playerZ >= trackLength) playerZ -= trackLength;
 
-    // Detect Coin Pickup
     if (currentSegment.coin && currentSegment.coin.active) {
         if (Math.abs(playerX - currentSegment.coin.x) < 0.4) { 
             currentSegment.coin.active = false;
             coinsCollected++;
             score += 500;
             if (navigator.vibrate) navigator.vibrate(20);
-            
             floatingTexts.push({ x: width/2, y: height/2 + 50, alpha: 1.0, text: '+500' });
         }
     }
 
-    // Traffic Collision
     if (invulnTimer > 0) {
         invulnTimer -= dt;
     } else {
@@ -538,7 +526,6 @@ function updateEngineState(dt) {
         }
     }
 
-    // Update Floating Texts
     for(let i = floatingTexts.length - 1; i >= 0; i--) {
         let ft = floatingTexts[i];
         ft.y -= 150 * dt; 
@@ -548,7 +535,7 @@ function updateEngineState(dt) {
 
     score += (speed / activeMaxSpeed) * dt * 100;
     uiScore.innerText = Math.floor(score);
-    uiSpeed.innerText = Math.floor((speed / activeMaxSpeed) * 280); // Speed illusion
+    uiSpeed.innerText = Math.floor((speed / activeMaxSpeed) * 280); 
     uiLives.innerText = lives;
     uiCoins.innerText = coinsCollected;
 }
@@ -561,7 +548,6 @@ function drawSceneGraph() {
     const camZ = playerZ;
     let baseCamY = baseSegment.p1.world.y + (baseSegment.p2.world.y - baseSegment.p1.world.y) * startPercent;
     
-    // Add camera shake effect to Y axis
     let shakeFactor = (Math.random() - 0.5) * cameraShake;
     const camY = baseCamY + cameraHeight + shakeFactor;
 
@@ -614,19 +600,16 @@ function drawSceneGraph() {
         }
     }
 
-    // Draw Player Car
     if (invulnTimer <= 0 || Math.floor(invulnTimer * 10) % 2 === 0) {
         let pW = width < height ? width * 0.45 : width * 0.22; 
         let pH = pW * 0.45;
         let pX = width / 2;
-        // Bump Y up if vibrating from off-road
         let pY = height - (width < height ? 180 : 80) + shakeFactor; 
-        let steerDirection = (keys.ArrowLeft ? -1 : keys.ArrowRight ? 1 : 0);
         
-        drawRealisticCar(ctx, pX, pY, pW, pH, '#ff3300', steerDirection, true); 
+        // Pass the perfectly smoothed steering variable to animate the wheels seamlessly
+        drawRealisticCar(ctx, pX, pY, pW, pH, '#ff3300', currentSteer, true); 
     }
 
-    // Render Floating Animations
     ctx.font = "bold 40px 'Segoe UI'";
     ctx.textAlign = "center";
     for(let ft of floatingTexts) {
@@ -642,7 +625,9 @@ function runHeartbeat(time) {
     if (gameState === 'playing') {
         let dt = (time - lastTime) / 1000;
         if (dt < 0) dt = 0; 
-        if (dt > 0.1) dt = 0.1; 
+        
+        // Tighter cap to prevent huge physics jumps on slow phones
+        if (dt > 0.05) dt = 0.05; 
         
         updateEngineState(dt);
         drawSceneGraph();
@@ -659,6 +644,7 @@ function startGame() {
     playerX = 0;
     playerZ = 0;
     speed = 0;
+    currentSteer = 0;
     score = 0;
     lives = 3;
     coinsCollected = 0;
